@@ -37,7 +37,7 @@
             0.1,
             1000
         );
-        camera.position.set(0, 2, 5);
+        camera.position.set(0, 10, 7);
         camera.lookAt(0, 0, 0);
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
@@ -51,12 +51,36 @@
         const directionalLightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
         scene.add(directionalLightHelper);
 
-        // ✅ พื้น
+        // const pointlight1 = new THREE.PointLight(0xffffff, 5, 5);
+        // pointlight1.position.set(0, 6, -1);
+        // pointlight1.castShadow = true; // ✅ เปิดใช้งานเงา
+        // scene.add(pointlight1);
+        // const pointLightHelper = new THREE.PointLightHelper(pointlight1, 0.2);
+        // scene.add(pointLightHelper);
+
+        const pointlight2 = new THREE.PointLight(0xffffff, 10, 7);
+        pointlight2.position.set(-2, 4, 2);
+        pointlight2.castShadow = true; // ✅ เปิดใช้งานเงา
+        scene.add(pointlight2);
+        const pointLight2Helper = new THREE.PointLightHelper(pointlight2, 0.2);
+        scene.add(pointLight2Helper);
+
+        // const spotlight = new THREE.SpotLight(0xffffff, 5);
+        // spotlight.position.set(-2, 20, 2);
+        // spotlight.target.position.set(-2, 0, 2);
+        // spotlight.target.updateMatrixWorld();
+        // spotlight.castShadow = true; // ✅ เปิดใช้งานเงา
+        // spotlight.angle = Math.PI / 15;
+        // scene.add(spotlight);
+        // const spotlightHelper = new THREE.SpotLightHelper(spotlight);
+        // scene.add(spotlightHelper);
+
+        //✅ พื้น
         const planeGeometry = new THREE.PlaneGeometry(10, 10);
         const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const plane = new THREE.Mesh(planeGeometry, planeMaterial);
         plane.rotation.x = -Math.PI / 2; // หมุนให้เป็นพื้น
-        plane.position.y = 0;
+        plane.position.set(-2, 0, 2);
         plane.receiveShadow = true; // ✅ พื้นรับเงา
         scene.add(plane);
 
@@ -73,25 +97,13 @@
         const floorGeom = new THREE.PlaneGeometry(10, 10);
         const floorMesh = new THREE.Mesh(floorGeom, mat1);
         floorMesh.rotation.x = -Math.PI / 2; // หมุนพื้นให้ขนตรง
+        floorMesh.position.set(-2, 0, 2);
         floorMesh.receiveShadow = true; // ✅ วัตถุนี้รับเงา
         scene.add(floorMesh);
 
         const loader = new THREE.GLTFLoader();
-        loader.load('https://phatlaksanai.github.io/repo.glb', function (gltf) {
-            const object = gltf.scene;
-            object.traverse(function (child) {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-            object.position.set(0, 0, 2);
-            scene.add(object);
-        }, undefined, function (error) {
-            console.error('Error loading GLTF:', error);
-        });
 
-        loader.load('https://phatlaksanai.github.io/modelhook.glb', function (gltf) {
+        loader.load('https://phatlaksanai.github.io/hook2.glb', function (gltf) {
             const object = gltf.scene;
             object.traverse(function (child) {
                 if (child.isMesh) {
@@ -105,16 +117,55 @@
             console.error('Error loading GLTF:', error);
         });
 
+        loader.load('https://phatlaksanai.github.io/xeno.glb', function (gltf) {
+            const object = gltf.scene;
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            object.position.set(-2, 0, 2);
+            scene.add(object);
+        }, undefined, function (error) {
+            console.error('Error loading GLTF:', error);
+        });
+        loader.load('https://phatlaksanai.github.io/home2.glb', function (gltf) {
+            const object = gltf.scene;
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            object.position.set(-2, 0, 2);
+            scene.add(object);
+        }, undefined, function (error) {
+            console.error('Error loading GLTF:', error);
+        });
+        loader.load('https://phatlaksanai.github.io/nisitpic.glb', function (gltf) {
+            const object = gltf.scene;
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+            object.position.set(-2, 0, 2);
+            scene.add(object);
+        }, undefined, function (error) {
+            console.error('Error loading GLTF:', error);
+        });
         //พื้นหลัง
-        const exrLoader = new THREE.EXRLoader();
-        exrLoader.load(
-            "https://phatlaksanai.github.io/satara_night_1k.exr", 
-            function (texture) {
-                texture.mapping = THREE.EquirectangularReflectionMapping;
-                scene.background = texture; // ทำเป็นพื้นหลัง
-                scene.environment = texture; // ทำเป็น reflection
-            }
-        );
+        // const exrLoader = new THREE.EXRLoader();
+        // exrLoader.load(
+        //     "https://phatlaksanai.github.io/satara_night_1k.exr", 
+        //     function (texture) {
+        //         texture.mapping = THREE.EquirectangularReflectionMapping;
+        //         scene.background = texture; // ทำเป็นพื้นหลัง
+        //         scene.environment = texture; // ทำเป็น reflection
+        //     }
+        // );
 
         window.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowLeft') {
