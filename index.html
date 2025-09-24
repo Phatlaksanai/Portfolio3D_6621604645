@@ -37,9 +37,13 @@
             0.1,
             1000
         );
-        camera.position.set(0, 10, 7);
-        camera.lookAt(0, 0, 0);
+        // camera.position.set(0, 10, 7);
+        // camera.lookAt(0, 0, 0); 
+        let pickedObjPosition = new THREE.Vector3(-2, 5, -1); // ตัวแปรเก็บตำแหน่งกล้อง
+        let cameraPosition = new THREE.Vector3(0, 5, 5); // ตัวแปรเก็บตำแหน่งกล้อง
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.5, 0);
+        controls.enableDamping = true;
 
         const AmbientLight = new THREE.AmbientLight(0x454040); // แสงสว่างทั่วไป
         scene.add(AmbientLight);
@@ -51,16 +55,16 @@
         const directionalLightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
         scene.add(directionalLightHelper);
 
-        // const pointlight1 = new THREE.PointLight(0xffffff, 5, 5);
-        // pointlight1.position.set(0, 6, -1);
-        // pointlight1.castShadow = true; // ✅ เปิดใช้งานเงา
-        // scene.add(pointlight1);
-        // const pointLightHelper = new THREE.PointLightHelper(pointlight1, 0.2);
-        // scene.add(pointLightHelper);
+        //     const pointlight1 = new THREE.PointLight(0xffffff, 5, 5);
+        //     pointlight1.position.set(0, 6, -1);
+        //    // pointlight1.castShadow = true; // ✅ เปิดใช้งานเงา
+        //     scene.add(pointlight1);
+        //     const pointLightHelper = new THREE.PointLightHelper(pointlight1, 0.2);
+        //     scene.add(pointLightHelper);
 
-        const pointlight2 = new THREE.PointLight(0xffffff, 10, 7);
+        const pointlight2 = new THREE.PointLight(0xffffff, 7, 7);
         pointlight2.position.set(-2, 4, 2);
-        pointlight2.castShadow = true; // ✅ เปิดใช้งานเงา
+        // pointlight2.castShadow = true; // ✅ เปิดใช้งานเงา
         scene.add(pointlight2);
         const pointLight2Helper = new THREE.PointLightHelper(pointlight2, 0.2);
         scene.add(pointLight2Helper);
@@ -147,7 +151,7 @@
             const object = gltf.scene;
             object.traverse(function (child) {
                 if (child.isMesh) {
-                    child.castShadow = true;
+                    //child.castShadow = true;
                     child.receiveShadow = true;
                 }
             });
@@ -156,6 +160,94 @@
         }, undefined, function (error) {
             console.error('Error loading GLTF:', error);
         });
+
+        const clickable = []; // เก็บเฉพาะ object ที่ต้องการให้คลิกได้
+        function addObj(mesh, pos, name) {
+            mesh.position.copy(pos);
+            mesh.name = name;
+            scene.add(mesh);
+            clickable.push(mesh);
+            return mesh;
+        }
+
+        const box = addObj(
+            new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshBasicMaterial({ color: 0xff6b6b })),
+            new THREE.Vector3(-2, 0.4, 0),
+            'Box'
+        );
+
+        const VIEWS = { //  pos ตำแหน่งตั้งกล้อง, tar ตำแหน่งที่กล้องมอง
+                Box: { pos: new THREE.Vector3(-3, 1.4, 1.6), tar: new THREE.Vector3(-2, 0.4, 0) },
+            };
+            //let cameraPosition = VIEWS['Sphere'].pos;
+            // --- Raycaster + คลิกเพื่อสลับมุม ---
+            const raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+
+            function setPointer(e) {
+                const r = renderer.domElement.getBoundingClientRect();
+                const x = (e.clientX ?? e.touches[0].clientX) - r.left;
+                const y = (e.clientY ?? e.touches[0].clientY) - r.top;
+                pointer.x = (x / r.width) * 2 - 1;
+                pointer.y = -(y / r.height) * 2 + 1;
+            }
+
+            function onPick(e) {
+                setPointer(e);
+                raycaster.setFromCamera(pointer, camera);
+                const hit = raycaster.intersectObjects(clickable, false)[0];
+                if (!hit) return;
+                const view = VIEWS[hit.object.name];
+                cameraPosition = view.pos;
+                // pickedObjPosition = hit.object.position;
+                if (!view) return;
+
+                // ย้ายแบบทันที (ถ้าอยากนุ่ม ๆ ค่อยเสริม lerp ทีหลัง)
+                // camera.position.copy(view.pos);
+                // controls.target.copy(view.tar);
+                controls.update();
+            }
+
+            renderer.domElement.addEventListener('click', onPick);
+            renderer.domElement.addEventListener('touchend', (e) => { onPick(e); }, { passive: true });
+
+            // --- Resize ---
+            addEventListener('resize', () => {
+                camera.aspect = innerWidth / innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(innerWidth, innerHeight);
+            });
+
+            function lerp(a, b, t) {
+                return a + (b - a) * t;   // t ใน [0..1]
+            } // สูตรหาค่าระหว่างจุด 2 จุด
+
+            let t = 0; // ตัวแปรเวลา
+            let cylinderTarget = new THREE.Vector3();
+            // --- Loop ---
+            function loop() {
+                t += 0.02;
+                if (t > 1.0){
+                    t = 0.0;
+                    // cylinderTarget.x = lerp(-3.0, 3.0, Math.random());
+                    // cylinderTarget.y = 0.5;
+                    // cylinderTarget.z = lerp(-4.0, 4.0, Math.random());
+                }; 
+                controls.update();
+
+                box.position.lerp(cylinderTarget, 0.02);
+                controls.target.lerp(pickedObjPosition, 0.02);
+                camera.position.lerp(cameraPosition, 0.02);
+                // PurpleSphere.position.x = lerp(sphere.position.x, cylinder.position.x, Math.sin(t * Math.PI));
+                // PurpleSphere.position.y = lerp(sphere.position.y, cylinder.position.y, Math.sin(t * Math.PI));
+                // PurpleSphere.position.z = lerp(sphere.position.z, cylinder.position.z, Math.sin(t * Math.PI));
+                
+                // sas.position.set(0,0,0);
+                // sas.rotation.set(-Math.PI/2,0,0);
+                renderer.render(scene, camera);
+                requestAnimationFrame(loop);
+            }
+            loop();
         //พื้นหลัง
         // const exrLoader = new THREE.EXRLoader();
         // exrLoader.load(
@@ -189,15 +281,15 @@
 
         });
 
-        
-        function animate(t) {
-            // directionalLight.position.x = 1+Math.sin(t / 1000) *-10;
-            // directionalLight.position.y = 2+Math.cos(t / 1000) *-10;
-            //  directionalLight.position.y = 5* Math.sin(t / 1000)*2;
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        animate(0);
+
+        // function animate(t) {
+        //     // directionalLight.position.x = 1+Math.sin(t / 1000) *-10;
+        //     // directionalLight.position.y = 2+Math.cos(t / 1000) *-10;
+        //     //  directionalLight.position.y = 5* Math.sin(t / 1000)*2;
+        //     renderer.render(scene, camera);
+        //     requestAnimationFrame(animate);
+        // }
+        // animate(0);
 
         window.addEventListener('keydown', (event) => {
 
