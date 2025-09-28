@@ -55,12 +55,19 @@
         // const directionalLightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
         // scene.add(directionalLightHelper);
 
-        //     const pointlight1 = new THREE.PointLight(0xffffff, 5, 5);
-        //     pointlight1.position.set(0, 6, -1);
-        //    // pointlight1.castShadow = true; // ✅ เปิดใช้งานเงา
-        //     scene.add(pointlight1);
-        //     const pointLightHelper = new THREE.PointLightHelper(pointlight1, 0.2);
-        //     scene.add(pointLightHelper);
+        const pointlight1 = new THREE.PointLight(0xffffff, 5, 5);
+        pointlight1.position.set(0, 3, 5);
+        // pointlight1.castShadow = true; // ✅ เปิดใช้งานเงา
+        scene.add(pointlight1);
+        // const pointLight1Helper = new THREE.PointLightHelper(pointlight1, 0.2);
+        // scene.add(pointLight1Helper);
+
+        const pointlight3 = new THREE.PointLight(0xffffff, 3, 3);
+        pointlight3.position.set(1, 2, -1);
+        // pointlight3.castShadow = true; // ✅ เปิดใช้งานเงา
+        scene.add(pointlight3);
+        // const pointLight3Helper = new THREE.PointLightHelper(pointlight3, 0.2);
+        // scene.add(pointLight3Helper);
 
         const pointlight2 = new THREE.PointLight(0xffffff, 5, 6);  // ความสว่าง, ระยะ
         pointlight2.position.set(-2, 4, 2);
@@ -160,7 +167,7 @@
         }, undefined, function (error) {
             console.error('Error loading GLTF:', error);
         });
-        loader.load('https://phatlaksanai.github.io/newsign.glb', function (gltf) {
+        loader.load('https://phatlaksanai.github.io/lastsign.glb', function (gltf) {
             const object = gltf.scene;
             object.traverse(function (child) {
                 if (child.isMesh) {
