@@ -76,16 +76,6 @@
         // const pointLight2Helper = new THREE.PointLightHelper(pointlight2, 0.2);
         // scene.add(pointLight2Helper);
 
-        // const spotlight = new THREE.SpotLight(0xffffff, 5);
-        // spotlight.position.set(-2, 20, 2);
-        // spotlight.target.position.set(-2, 0, 2);
-        // spotlight.target.updateMatrixWorld();
-        // spotlight.castShadow = true; // ✅ เปิดใช้งานเงา
-        // spotlight.angle = Math.PI / 15;
-        // scene.add(spotlight);
-        // const spotlightHelper = new THREE.SpotLightHelper(spotlight);
-        // scene.add(spotlightHelper);
-
         //✅ พื้น
         const planeGeometry = new THREE.PlaneGeometry(10, 10);
         const planeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -167,7 +157,7 @@
         }, undefined, function (error) {
             console.error('Error loading GLTF:', error);
         });
-        loader.load('https://phatlaksanai.github.io/lastsign.glb', function (gltf) {
+        loader.load('https://phatlaksanai.github.io/thelastestsign.glb', function (gltf) {
             const object = gltf.scene;
             object.traverse(function (child) {
                 if (child.isMesh) {
@@ -182,7 +172,68 @@
         });
 
         const clickable = []; // เก็บเฉพาะ object ที่ต้องการให้คลิกได้
+
+        const buttonUniforms = {// Cell Shader 
+            uTime: { value: 0.0 },
+            uLightDir: { value: new THREE.Vector3(0.4, 1.0, 0.8).normalize() },
+            uTex: {
+                value: new THREE.TextureLoader().load(
+                    "https://th.bing.com/th/id/R.7c039f1f5011beb8748fe708affa1994?rik=BBcM1h5lbRbrjg&pid=ImgRaw&r=0" 
+                )
+            }
+        };
+
+        const buttonVert = `
+  uniform float uTime;
+  varying vec3 vNormal;
+  varying vec3 vPosW;
+  varying vec2 vuv;
+
+  void main() {
+    vNormal = normalize(mat3(modelMatrix) * normal);
+    vec3 pos = position;
+    vuv = uv;
+    vPosW = (modelMatrix * vec4(pos, 1.0)).xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+        const buttonFrag = `
+  precision mediump float;
+  varying vec3 vNormal;
+  uniform vec3 uLightDir;
+  varying vec3 vPosW;
+  varying vec2 vuv;
+  uniform sampler2D uTex;
+
+  void main() {
+    float diffuse = clamp(dot(vNormal, uLightDir), 0.0, 1.0);
+    float levels = 5.0;                        
+    diffuse   = floor(diffuse * levels) / levels;
+    diffuse += 0.6;
+
+    vec3 R = reflect(-uLightDir, vNormal);
+    vec3 V = normalize(cameraPosition - vPosW);
+    float specular = max(pow(dot(R, V), 8.0), 0.0);
+    specular = clamp(smoothstep(0.4, 0.6, specular),0.0,1.0);
+
+    if(diffuse <= 0.6) 
+      specular = 0.0;
+
+    vec3 base = texture2D(uTex, vuv).rgb; 
+    vec3 ambient = vec3(0.3);       
+    vec3 color = (base * diffuse) + specular + ambient;
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
+
         function addObj(mesh, pos, name) {
+            mesh.material = new THREE.ShaderMaterial({
+                vertexShader: buttonVert,
+                fragmentShader: buttonFrag,
+                uniforms: buttonUniforms,
+                side: THREE.DoubleSide
+            });
             mesh.position.copy(pos);
             mesh.name = name;
             scene.add(mesh);
@@ -190,38 +241,75 @@
             return mesh;
         }
 
-        addObj(
-            new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), new THREE.MeshBasicMaterial({ color: 0xff6b6b })),
+        const pic = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff6b6b })),
             new THREE.Vector3(-2.2, 1.5, 6.6),
             'Pic'
         );
-        addObj(
-            new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), new THREE.MeshBasicMaterial({ color: 0x00FF7F })),
+        pic.rotation.y = -Math.PI * 0.5; 
+        const meme = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0x00FF7F })),
             new THREE.Vector3(-2.2, 4.5, 6.6),
             'meme'
         );
-        addObj(
-            new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+        meme.rotation.y = -Math.PI * 0.5;
+        const Homepic = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
             new THREE.Vector3(-2, 3.5, -2.4),
             'Homepic'
         );
+        Homepic.rotation.y = -Math.PI * 0.5;
+        const NextDetailNisit = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Vector3(-2, 2.2, -2.4),
+            'NextDetailNisit'
+        );
+        NextDetailNisit.rotation.y = -Math.PI * 0.5;
         const Homememe = addObj(
-            new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
             new THREE.Vector3(-6.3, 1.6, 2),
             'Homememe'
         );
-        Homememe.rotation.y = -Math.PI * 0.5; // หันไปทางซ้าย
-        addObj(
-            new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), new THREE.MeshBasicMaterial({ color: 0x87CEFA })),
+        Homememe.rotation.y = -Math.PI * 0;
+        const BackDetailNisit = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Vector3(2.4, 1.1, 5),
+            'BackDetailNisit'
+        );
+        BackDetailNisit.rotation.y = Math.PI;
+        const alien = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0x87CEFA })),
             new THREE.Vector3(-2.2, 3, 6.6),
             'alien'
         );
+        alien.rotation.y = -Math.PI * 0.5;
         const Homealien = addObj(
-            new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff })),
-            new THREE.Vector3(-1.3, 0.1, 1.7),
+            new THREE.Mesh(new THREE.SphereGeometry(0.15, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Vector3(-1.3, 0.1, 1.8),
             'Homealien'
         );
-        Homealien.rotation.x = Math.PI * 0.5; // หันขึ้นบน
+        Homealien.rotation.z = Math.PI * 0.75;
+        const Nextalien = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.15, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Vector3(-1.3, 0.1, 0.5),
+            'Nextalien'
+        );
+        Nextalien.rotation.z = Math.PI * 0.75;
+        const backalien = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.15, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Vector3(-4.5, 0.1, 0.6),
+            'backalien'
+        );
+        backalien.rotation.z = Math.PI * 0.5;
+        backalien.rotation.y = -Math.PI * 0.5;
+        const NextCredit = addObj(
+            new THREE.Mesh(new THREE.SphereGeometry(0.15, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffffff })),
+            new THREE.Vector3(-4.5, 0.1, 0.0),
+            'NextCredit'
+        );
+        NextCredit.rotation.z = Math.PI * 0.5;
+        NextCredit.rotation.y = -Math.PI * 0.5;
+
 
         const VIEWS = { //  pos ตำแหน่งตั้งกล้อง, tar ตำแหน่งที่กล้องมอง
             Pic: { pos: new THREE.Vector3(-1.5, 4, 0.0), tar: new THREE.Vector3(0.0, 2, -5.0) },
@@ -230,8 +318,11 @@
             Homememe: { pos: new THREE.Vector3(-2.0, 5, 12), tar: new THREE.Vector3(-2, 2, 0) },
             alien: { pos: new THREE.Vector3(-3, 1, 1), tar: new THREE.Vector3(4, 1, 1) },
             Homealien: { pos: new THREE.Vector3(-2.0, 5, 12), tar: new THREE.Vector3(-2, 2, 0) },
-            // NameBox: { pos: new THREE.Vector3(-2, 5, 12), tar: new THREE.Vector3(-2, 2, 0) },
-            // HomeBox: { pos: new THREE.Vector3(-2, 5, 12), tar: new THREE.Vector3(-2, 2, 0) },
+            Nextalien: { pos: new THREE.Vector3(-5.0, 3.3, 1), tar: new THREE.Vector3(-5.0, 2, 0) },
+            backalien: { pos: new THREE.Vector3(-3, 1, 1), tar: new THREE.Vector3(4, 1, 1) },
+            NextDetailNisit: { pos: new THREE.Vector3(0.0, 3.0, 5), tar: new THREE.Vector3(10.0, 1, 3) },
+            BackDetailNisit: { pos: new THREE.Vector3(-1.5, 4, 0.0), tar: new THREE.Vector3(0.0, 2, -5.0) },
+            NextCredit: { pos: new THREE.Vector3(-2, 10, 2), tar: new THREE.Vector3(0, 20, 0) },
         };
         //let cameraPosition = VIEWS['Sphere'].pos;
         // --- Raycaster + คลิกเพื่อสลับมุม ---
@@ -257,7 +348,6 @@
             // pickedObjPosition = hit.object.position;
             if (!view) return;
 
-            // ย้ายแบบทันที (ถ้าอยากนุ่ม ๆ ค่อยเสริม lerp ทีหลัง)
             // camera.position.copy(view.pos);
             // controls.target.copy(view.tar);
             controls.update();
@@ -280,7 +370,6 @@
         let t = 0; // ตัวแปรเวลา
         let cylinderTarget = new THREE.Vector3();
 
-        // --- เพิ่มธงโบกสะบัดที่ตำแหน่งกำหนดเอง ---
         const flagUniforms = {
             uTime: { value: 0.0 },
             uLightDir: { value: new THREE.Vector3(0.4, 1.0, 0.8).normalize() },
@@ -312,8 +401,6 @@
         gl_FragColor = vec4(base, 1.0);
     }
 `;
-
-        // Plane สำหรับธง
         const flagGeo = new THREE.PlaneBufferGeometry(2.0, 1.5, 32, 32);
         const flagMat = new THREE.ShaderMaterial({
             vertexShader: flagVert,
@@ -323,23 +410,18 @@
         });
 
         const flagMesh = new THREE.Mesh(flagGeo, flagMat);
-        // กำหนดตำแหน่งเอง
-        flagMesh.position.set(0.0, 5.0, 6.7); // ปรับตามต้องการ
-        flagMesh.rotation.y = Math.PI * 0.0; // หมุนถ้าต้องการหันหน้า
+        flagMesh.position.set(0.0, 5.0, 6.7);
+        flagMesh.rotation.y = Math.PI * 0.0;
         scene.add(flagMesh);
-
-        // โหลด texture ธงใหม่
         const bozo = new THREE.TextureLoader().load(
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbXGWUbr4_2jeJ6olsx5n2r7B7EED9SdDjHA&s"
         );
 
-        // สร้างธงใหม่พร้อม texture ของตัวเอง
         const bozoFlagMat = flagMat.clone();
         bozoFlagMat.uniforms = {
             ...flagMat.uniforms,
-            uTex: { value: bozo }  //  ใส่ texture ใหม่
+            uTex: { value: bozo }
         };
-
         const bozoFlag = new THREE.Mesh(flagGeo, bozoFlagMat);
         bozoFlag.position.set(-6.2, 3.0, 1.2);
         bozoFlag.rotation.y = Math.PI / 2;
@@ -349,13 +431,11 @@
             "https://us.v-cdn.net/6030815/uploads/IFDHTQV8WCAS/picsart-06-05-08-44-04.jpg"
         );
 
-        // สร้างธงใหม่พร้อม texture ของตัวเอง
         const michealFlagMat = flagMat.clone();
         michealFlagMat.uniforms = {
             ...flagMat.uniforms,
-            uTex: { value: micheal }  //  ใส่ texture ใหม่
+            uTex: { value: micheal }
         };
-
         const michealFlag = new THREE.Mesh(flagGeo, michealFlagMat);
         michealFlag.position.set(-6.2, 3.0, 4);
         michealFlag.rotation.y = Math.PI / 2;
@@ -365,13 +445,11 @@
             "https://i.ytimg.com/vi/-ZRLokOnXKc/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLB3UpIslX22T9DKA8OYf2cDuTPbDw"
         );
 
-        // สร้างธงใหม่พร้อม texture ของตัวเอง
         const doctorFlagMat = flagMat.clone();
         doctorFlagMat.uniforms = {
             ...flagMat.uniforms,
-            uTex: { value: doctor }  //  ใส่ texture ใหม่
+            uTex: { value: doctor }
         };
-
         const doctorFlag = new THREE.Mesh(flagGeo, doctorFlagMat);
         doctorFlag.position.set(-6.2, 5.0, 4);
         doctorFlag.rotation.y = Math.PI / 2;
@@ -380,12 +458,10 @@
         const steve = new THREE.TextureLoader().load(
             "https://i.ytimg.com/vi/Z02s-QIOrtk/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCOEKXleyRAksapyIeaNhpeOLgvSg"
         );
-
-        // สร้างธงใหม่พร้อม texture ของตัวเอง
         const steveFlagMat = flagMat.clone();
         steveFlagMat.uniforms = {
             ...flagMat.uniforms,
-            uTex: { value: steve }  //  ใส่ texture ใหม่
+            uTex: { value: steve }
         };
 
         const steveFlag = new THREE.Mesh(flagGeo, steveFlagMat);
@@ -393,15 +469,15 @@
         steveFlag.rotation.y = Math.PI / 2;
         scene.add(steveFlag);
 
-        // --- ใน loop ของ animation ของโค้ดแรก ---
         function loop() {
             t += 0.02;
-
-            // อัปเดตเวลาธง
             flagUniforms.uTime.value = performance.now() / 1000;
-
-            // ไม่ต้องหมุนเข้ากล้อง
-            // flagMesh.lookAt(camera.position);
+            buttonUniforms.uTime.value = performance.now() / 1000;
+            buttonUniforms.uLightDir.value.set(
+                Math.sin(performance.now() / 1000) * 2.0,
+                1.0,
+                0.8
+            ).normalize();
 
             controls.update();
             controls.target.lerp(pickedObjPosition, 0.02);
@@ -411,51 +487,7 @@
         }
 
         loop();
-        //พื้นหลัง
-        // const exrLoader = new THREE.EXRLoader();
-        // exrLoader.load(
-        //     "https://phatlaksanai.github.io/satara_night_1k.exr", 
-        //     function (texture) {
-        //         texture.mapping = THREE.EquirectangularReflectionMapping;
-        //         scene.background = texture; // ทำเป็นพื้นหลัง
-        //         scene.environment = texture; // ทำเป็น reflection
-        //     }
-        // );
-
-        // window.addEventListener('keydown', (event) => {
-        //     if (event.key === 'ArrowLeft') {
-        //         directionalLight.rotation.y -= 0.3; // หมุนกล้องเข้า
-        //     } else if (event.key === 'ArrowRight') {
-        //         directionalLight.rotation.y += 0.3; // หมุนกล้องออก
-        //     } else if (event.key === 'ArrowUp') {
-        //         directionalLight.rotation.x -= 0.3; // หมุนกล้องซ้าย
-        //     } else if (event.key === 'ArrowDown') {
-        //         directionalLight.rotation.x += 0.3; // หมุนกล้องขวา
-        //     }
-        //     if (event.key === 'w') {
-        //         directionalLight.position.z -= 0.3; // เลื่อนกล้องเข้า
-        //     } else if (event.key === 's') {
-        //         directionalLight.position.z += 0.3; // เลื่อนกล้องออก
-        //     } else if (event.key === 'a') {
-        //         directionalLight.position.x -= 0.3; // เลื่อนกล้องซ้าย
-        //     } else if (event.key === 'd') {
-        //         directionalLight.position.x += 0.3; // เลื่อนกล้องขวา
-        //     }
-
-        // });
-
-
-        // function animate(t) {
-        //     // directionalLight.position.x = 1+Math.sin(t / 1000) *-10;
-        //     // directionalLight.position.y = 2+Math.cos(t / 1000) *-10;
-        //     //  directionalLight.position.y = 5* Math.sin(t / 1000)*2;
-        //     renderer.render(scene, camera);
-        //     requestAnimationFrame(animate);
-        // }
-        // animate(0);
-
         window.addEventListener('keydown', (event) => {
-
         });
 
     </script>
